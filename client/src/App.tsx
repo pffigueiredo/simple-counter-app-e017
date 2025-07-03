@@ -1,7 +1,7 @@
-
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Switch } from '@/components/ui/switch';
 import { trpc } from '@/utils/trpc';
 import { useState, useEffect, useCallback } from 'react';
 import type { Counter } from '../../server/src/schema';
@@ -15,6 +15,37 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [backendError, setBackendError] = useState(false);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Initialize theme from localStorage or default to light mode
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    
+    setIsDarkMode(prefersDark);
+    
+    // Apply theme to html element
+    if (prefersDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, []);
+
+  // Handle theme toggle
+  const toggleTheme = useCallback(() => {
+    const newTheme = !isDarkMode;
+    setIsDarkMode(newTheme);
+    
+    // Apply theme to html element
+    if (newTheme) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [isDarkMode]);
 
   // Load counter data on component mount
   const loadCounter = useCallback(async () => {
@@ -76,14 +107,28 @@ function App() {
 
   if (!initialLoadComplete) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">Loading counter...</div>
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="text-lg text-foreground">Loading counter...</div>
       </div>
     );
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
+    <div className="relative flex items-center justify-center min-h-screen bg-background">
+      {/* Theme Toggle */}
+      <div className="absolute top-4 right-4">
+        <div className="flex items-center space-x-2">
+          <span className="text-sm text-muted-foreground">
+            {isDarkMode ? '🌙' : '☀️'}
+          </span>
+          <Switch
+            checked={isDarkMode}
+            onCheckedChange={toggleTheme}
+            aria-label="Toggle dark mode"
+          />
+        </div>
+      </div>
+
       <Card className="w-96">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Counter App</CardTitle>
@@ -91,8 +136,8 @@ function App() {
         <CardContent className="space-y-6">
           {/* Backend Error Alert */}
           {backendError && (
-            <Alert className="border-yellow-200 bg-yellow-50">
-              <AlertDescription className="text-yellow-800">
+            <Alert className="border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-900/20">
+              <AlertDescription className="text-yellow-800 dark:text-yellow-200">
                 🔄 Running in offline mode - changes won't persist
               </AlertDescription>
             </Alert>
@@ -100,10 +145,10 @@ function App() {
 
           {/* Counter Display */}
           <div className="text-center">
-            <div className="text-6xl font-bold text-blue-600 mb-2">
+            <div className="text-6xl font-bold text-primary mb-2">
               {counter.count}
             </div>
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-muted-foreground">
               Last updated: {counter.updated_at.toLocaleString()}
             </div>
           </div>
@@ -139,7 +184,7 @@ function App() {
           </div>
 
           {isLoading && (
-            <div className="text-center text-sm text-gray-500">
+            <div className="text-center text-sm text-muted-foreground">
               Updating counter...
             </div>
           )}
